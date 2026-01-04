@@ -1,0 +1,1 @@
+python,java,sql,data analysis,machine learning,deep learning,nlp,communication,teamwork,problem solving,projects,internship,api,cloud,git,linux
