@@ -40,6 +40,7 @@ if uploaded_file:
     ats_score = calculate_ats_score(cleaned_text, keywords)
     strengths, weaknesses = analyze_strengths_weaknesses(cleaned_text)
     tips = generate_tips(weaknesses)
+    top_tips = tips[:5] if tips else ["Your resume is well optimized!"]
 
     # ---------------- JD MATCH SCORE ----------------
     jd_score = None
@@ -122,7 +123,6 @@ if uploaded_file:
     # ---------------- TOP 5 IMPROVEMENTS ----------------
     st.markdown("---")
     st.subheader("🛠 Top 5 Improvement Recommendations")
-    top_tips = tips[:5] if tips else ["Your resume is well optimized!"]
     for i, t in enumerate(top_tips, 1):
         st.info(f"**{i}.** {t}")
 
@@ -135,60 +135,30 @@ if uploaded_file:
         for i, kw in enumerate(missing_jd_keywords):
             cols[i % 5].error(f"`{kw}`")
 
-    # ---------------- PDF DOWNLOAD ----------------
+    # ---------------- DOWNLOAD REPORT ----------------
     st.markdown("---")
     st.subheader("📥 Download Your Report")
 
-    def generate_pdf_report():
-        try:
-            from fpdf import FPDF
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", "B", 16)
-            pdf.cell(0, 10, "AI Resume Analysis Report", ln=True, align="C")
-            pdf.ln(5)
+    report_text = f"""AI RESUME ANALYSIS REPORT
+==========================
+ATS Score: {ats_score} / 100
+{"JD Match Score: " + str(jd_score) + " / 100" if jd_score else "JD Match: Paste a job description to see your score"}
 
-            pdf.set_font("Arial", "B", 13)
-            pdf.cell(0, 10, f"ATS Score: {ats_score} / 100", ln=True)
-            if jd_score is not None:
-                pdf.cell(0, 10, f"JD Match Score: {jd_score} / 100", ln=True)
-            pdf.ln(3)
+STRENGTHS:
+{chr(10).join(["+ " + s for s in strengths]) if strengths else "None detected"}
 
-            pdf.set_font("Arial", "B", 12)
-            pdf.cell(0, 10, "Strengths:", ln=True)
-            pdf.set_font("Arial", size=11)
-            for s in strengths:
-                pdf.multi_cell(0, 8, f"  + {s}")
+WEAKNESSES:
+{chr(10).join(["- " + w for w in weaknesses]) if weaknesses else "None detected"}
 
-            pdf.set_font("Arial", "B", 12)
-            pdf.cell(0, 10, "Weaknesses:", ln=True)
-            pdf.set_font("Arial", size=11)
-            for w in weaknesses:
-                pdf.multi_cell(0, 8, f"  - {w}")
+TOP 5 IMPROVEMENTS:
+{chr(10).join([str(i+1) + ". " + t for i, t in enumerate(top_tips)])}
 
-            pdf.set_font("Arial", "B", 12)
-            pdf.cell(0, 10, "Top Improvements:", ln=True)
-            pdf.set_font("Arial", size=11)
-            for i, t in enumerate(top_tips, 1):
-                pdf.multi_cell(0, 8, f"  {i}. {t}")
+{"MISSING JD KEYWORDS: " + ", ".join(missing_jd_keywords) if missing_jd_keywords else ""}
+"""
 
-            if missing_jd_keywords:
-                pdf.set_font("Arial", "B", 12)
-                pdf.cell(0, 10, "Missing JD Keywords:", ln=True)
-                pdf.set_font("Arial", size=11)
-                pdf.multi_cell(0, 8, ", ".join(missing_jd_keywords))
-
-            return pdf.output(dest='S').encode('latin-1')
-        except ImportError:
-            return None
-
-    pdf_bytes = generate_pdf_report()
-    if pdf_bytes:
-        st.download_button(
-            label="⬇️ Download PDF Report",
-            data=pdf_bytes,
-            file_name="resume_analysis_report.pdf",
-            mime="application/pdf"
-        )
-    else:
-        st.warning("To enable PDF download, add `fpdf2` to your requirements.txt")
+    st.download_button(
+        label="⬇️ Download Report (.txt)",
+        data=report_text,
+        file_name="resume_analysis_report.txt",
+        mime="text/plain"
+    )
